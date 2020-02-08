@@ -1,68 +1,100 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# React FRP
 
-## Available Scripts
+The idea is to reimplement a small subset of a store with sagas to get a fully
+working pure functionnal setup of React. Setup your store, add it in a Context
+Provider, and then you can just subscribe to the modifications using `useStore`.
+This give access to an object shaped like `{ state, dispatch }`. `state` is the
+last state accessible from the Store, and `dispatch` is the dispatcher function.
+The dispatcher accepts one string as first argument and a payload. The string
+should be exactly the name of either an action or a state action. When called,
+dispatch will trigger the action with the payload and automatically provide the
+latest store available. The result should be an object containing a `state` field,
+an `effects` field or both. The `state` field will update the state in the the store.
+The `effects` field shoud be an effect or an array of effect. Those effects will
+be run against the latest store available and they should commit all of their
+results in the store like every other action. An example of an effect can be found
+in `effects.js`.
 
-In the project directory, you can run:
+# The Store
 
-### `yarn start`
+```javascript
+import { Store } from 'Store'
+import http from 'Store/Effects'
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+// This is the initial state, used only during initialization.
+const initialState = {
+  users: [],
+}
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+// This is an object of functions, following all the same convention.
+//   (state, payload) => { state: newState, effects: [Effect] }
+const actions = {
+  updateAnd(state, payload) {
+    return {
+      state: { ...state, users: [...state.users, 'testtest'] },
+      effects: [
+        http({ url: 'http://google.com' }, 'google', 'fail'),
+        http({ url: 'https://microsoft.com' }, 'google', 'fail'),
+      ],
+    }
+  },
+}
 
-### `yarn test`
+// This is an object of functions, same as actions, but with { state: newState }
+//   automatically implied.
+const stateActions = {
+  update: (state, payload) => {
+    const users = [...state.users, 'test']
+    return { ...state, users }
+  },
+  google: (state, payload) => ({ ...state, users: ['Google'] }),
+  fail: (state, payload) => ({ ...state, users: [] }),
+}
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+const myStore = new Store(initialState, actions, stateActions)
+```
 
-### `yarn build`
+# The getters | Create your graph of connections.
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```javascript
+const useUsers = () => {
+  const { state } = useStore()
+  return state.users
+}
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+const useUsersAndNames = () => {
+  const users = useUsers()
+  const { state } = useStore()
+  return users.map((user, index) => `${user} + ${state.users[index]}`)
+}
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# The Connection
 
-### `yarn eject`
+```javascript
+import React from 'react'
+import { useStore } from 'Store'
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+// Connect the component by using useStore.
+const Counter = props => {
+  const { state, dispatch } = useStore()
+  const users = useUsersAndNames()
+  return (
+    <div>
+      <button onClick={() => dispatch('update')}>+</button>
+      <div>{users.join(' ')}</div>
+      <pre>{state.lastPage}</pre>
+      <button onClick={() => dispatch('updateAnd')}>-</button>
+    </div>
+  )
+}
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `yarn build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+// Add the Provider to your application tree.
+const App = () => (
+  <Provider store={myStore}>
+    <div className="App">
+      <Counter />
+    </div>
+  </Provider>
+)
+```
