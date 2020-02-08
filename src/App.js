@@ -1,26 +1,62 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from 'react'
+import { Provider, Store, useStore } from './Store'
+import { http } from './effects'
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const initialState = { users: [], lastPage: '' }
+
+const actions = {
+  updateAnd(state, payload) {
+    return {
+      state: { ...state, users: [...state.users, 'testtest'] },
+      effects: [
+        http({ url: 'http://google.com' }, 'google', 'fail'),
+        http({ url: 'https://microsoft.com' }, 'google', 'fail'),
+      ],
+    }
+  },
 }
 
-export default App;
+const stateActions = {
+  update: (state, payload) => {
+    const users = [...state.users, 'test']
+    return { ...state, users }
+  },
+  google: (state, payload) => ({ ...state, lastPage: payload }),
+  fail: (state, payload) => ({ ...state, lastPage: 'Nope' }),
+}
+
+const myStore = new Store(initialState, actions, stateActions)
+
+const useUsers = () => {
+  const { state } = useStore()
+  return state.users
+}
+
+const useUsersAndNames = () => {
+  const users = useUsers()
+  const { state } = useStore()
+  return users.map((user, index) => `${user} + ${state.users[index]}`)
+}
+
+const Counter = props => {
+  const { state, dispatch } = useStore()
+  const users = useUsersAndNames()
+  return (
+    <div>
+      <button onClick={() => dispatch('update')}>+</button>
+      <div>{users.join(' ')}</div>
+      <pre>{state.lastPage}</pre>
+      <button onClick={() => dispatch('updateAnd')}>-</button>
+    </div>
+  )
+}
+
+const App = () => (
+  <Provider store={myStore}>
+    <div className="App">
+      <Counter />
+    </div>
+  </Provider>
+)
+
+export default App
