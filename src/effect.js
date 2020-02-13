@@ -19,9 +19,9 @@ const getSuccessOrFailure = store => async effect => {
 
 const acceptAllOrReject = (acc, { success, failure, content }) => {
   if (success) {
-    return acc.then(acc => ({ ...acc, [success]: content }))
+    return acc.then(acc => [...acc, content])
   } else {
-    return Promise.reject({ failure, content })
+    return Promise.reject(content)
   }
 }
 
@@ -29,7 +29,7 @@ class Effect {
   static all(options, effects) {
     return new Effect(options, async store => {
       const results = await Promise.all(effects.map(getSuccessOrFailure(store)))
-      const total = await results.reduce(acceptAllOrReject, Promise.resolve({}))
+      const total = await results.reduce(acceptAllOrReject, Promise.resolve([]))
       return total
     })
   }
@@ -58,14 +58,14 @@ class Effect {
   map(mapper) {
     const eff = duplicate(this)
     const chainer = toMapper(mapper)
-    eff.chain = [...eff.chain, chainer]
+    eff.chain = [...this.chain, chainer]
     return eff
   }
 
   then(mapper) {
     const eff = duplicate(this)
     const chainer = toThener(mapper)
-    eff.chain = [...eff.chain, chainer]
+    eff.chain = [...this.chain, chainer]
     return eff
   }
 
@@ -78,14 +78,16 @@ class Effect {
         result = mapper(result)
       } else {
         result = mapper(result)
-        this.chain.slice(i + 1).reduce((result, { type, mapper }) => {
-          if (type === 'map') {
-            return result.map(mapper)
-          } else {
-            return result.then(mapper)
-          }
-        }, result)
-        return result.resolve(store)
+        const newResult = this.chain
+          .slice(i + 1)
+          .reduce((result, { type, mapper }) => {
+            if (type === 'map') {
+              return result.map(mapper)
+            } else {
+              return result.then(mapper)
+            }
+          }, result)
+        return newResult.resolve(store)
       }
       i += 1
     }

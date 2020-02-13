@@ -14,19 +14,3 @@ describe('Store', () => {
     expect(store.dispatch instanceof Function).toBeTruthy()
   })
 })
-
-describe('Effect', () => {
-  test('should be resolvable', async () => {
-    const effect = new Effect(options, () => Promise.resolve('test'))
-    const result = await effect.resolve()
-    expect(result).toEqual('test')
-  })
-  test('should throw when resolve if effect failing', async () => {
-    try {
-      const effect = new Effect(options, () => Promise.reject('test'))
-      await effect.resolve()
-    } catch (error) {
-      expect(error).toEqual('test')
-    }
-  })
-})
