@@ -51,9 +51,7 @@ const runAction = (store, eventName, payload) => {
 const dispatchEffect = store => async effect => {
   try {
     const result = await effect.resolve(store)
-    if (result) {
-      store.dispatch(effect.success, result)
-    }
+    store.dispatch(effect.success, result)
   } catch (error) {
     store.dispatch(effect.failure, error)
   }
