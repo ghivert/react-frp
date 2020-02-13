@@ -74,10 +74,8 @@ class Effect {
     let i = 0
     while (this.chain[i]) {
       const { type, mapper } = this.chain[i]
-      if (type === 'map') {
-        result = mapper(result)
-      } else {
-        result = mapper(result)
+      result = mapper(result)
+      if (type === 'then') {
         const newResult = this.chain
           .slice(i + 1)
           .reduce((result, { type, mapper }) => {
