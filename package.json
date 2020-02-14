@@ -1,7 +1,7 @@
 {
-  "name": "react-frp",
+  "name": "react-purestore",
   "version": "0.1.0",
-  "repository": "https://github.com/ghivert/react-frp",
+  "repository": "https://github.com/ghivert/react-purestore",
   "author": "Guillaume Hivert <hivert.is.coming@gmail.com>",
   "license": "MIT",
   "scripts": {
