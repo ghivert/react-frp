@@ -35,7 +35,7 @@ const createStore = () => {
       return { ...state, failure: true }
     },
   }
-  return new Store(initialState, actions, mutations)
+  return new Store(initialState, mutations, actions)
 }
 
 describe('Store', () => {

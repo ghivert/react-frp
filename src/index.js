@@ -58,7 +58,7 @@ const dispatchEffect = store => async effect => {
 }
 
 class Store extends EventTarget {
-  constructor(value, actions = {}, mutations = {}) {
+  constructor(value, mutations = {}, actions = {}) {
     super()
     this.state = value
     this.actions = actions
