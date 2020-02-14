@@ -1,6 +1,6 @@
 {
   "name": "react-purestore",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "repository": "https://github.com/ghivert/react-purestore",
   "author": "Guillaume Hivert <hivert.is.coming@gmail.com>",
   "main": "src/index.js",
