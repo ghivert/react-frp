@@ -127,7 +127,7 @@ import { Effect } from 'react-purestore'
 // First we define the HTTP Effect.
 const http = ({ success, failure, url, json, method }) => {
   return new Effect({ success, failure }, async () => {
-    const response = await fetch('url', { method })
+    const response = await fetch('url', { method: method || 'GET' })
     if (json) {
       return response.json()
     } else {
@@ -183,6 +183,57 @@ Phew, that was huge! Now you have everything you need to get started with you fi
 ## Advanced tips
 
 If you’re here, you’re probably used to the framework. Nice! Here are some tips to help you design your applications.
+
+## Effects
+
+> Having `Effect`s is cool, but why are they here? I mean, you can mimic the behavior of effects with just simple Promise.
+
+And you’re right. But `Effect`s are a little more complex. They are composable. To do so, they expose different functions: `map`, `then` and `Effect.all`. First things first, `map` and `then`. `map` is a function allowing to transform the result of Effects before they will be returned to the store. `then` allow to chain Effects in order to change context after an Effect has been run.
+
+```javascript
+// We’ll keep the http effect defined earlier.
+const jsonResult = http({
+  success: 'httpResponse',
+  failure: 'httpFailure',
+  url: '/api/content',
+  method: 'GET',
+  json: true,
+})
+
+// Let’s say extractIdFromPage is defined and returns an ID.
+const idResult = jsonResult.map(content => extractIdFromPage(content))
+const otherThing = idResult.then(content => http({
+  success: 'secondHttpResponse',
+  failure: 'secondHttpFailure',
+  url: `/api/post/${content}`,
+  method: 'GET',
+}))
+```
+
+Be careful, you cannot return an Effect in a map, and you should return an `Efffect` in then. Of course any failure in the chain will automatically stop the chain.
+
+Finally all, the composability function. It behaves a little like `Promise.all`.
+
+```javascript
+const firstEffect = http({
+  success: 'firstSuccess',
+  failure: 'firstFailure',
+  url: '/api/content',
+})
+
+const secondEffect = http({
+  success: 'secondSuccess',
+  failure: 'secondFailure',
+  url: '/api/content',
+})
+
+const options = { success: 'allSuccess', failure: 'allFailure' }
+
+const alls = Effect.all(options, [firstEffect, secondEffect])
+// Once ran, the store will be called with allSuccess with the payload equal to
+//   { firstSuccess: [result], secondSuccess: [result] } or with allFailure with
+//   an object similar to success but with messages of failed Effects.
+```
 
 ## Custom Hook gets
 

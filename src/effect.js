@@ -18,10 +18,19 @@ const getSuccessOrFailure = store => async effect => {
 }
 
 const acceptAllOrReject = (acc, { success, failure, content }) => {
+  const [successes, failures] = acc
   if (success) {
-    return acc.then(acc => [...acc, content])
+    return [{ ...successes, [success]: content }, failures]
   } else {
-    return Promise.reject(content)
+    return [successes, { ...failures, [failure]: content }]
+  }
+}
+
+const selectSucessesOrFailures = ([successes, failures]) => {
+  if (Object.keys(failures).length === 0) {
+    return Promise.resolve(successes)
+  } else {
+    return Promise.reject(failures)
   }
 }
 
@@ -29,8 +38,8 @@ class Effect {
   static all(options, effects) {
     return new Effect(options, async store => {
       const results = await Promise.all(effects.map(getSuccessOrFailure(store)))
-      const total = await results.reduce(acceptAllOrReject, Promise.resolve([]))
-      return total
+      const total = results.reduce(acceptAllOrReject, [{}, {}])
+      return selectSucessesOrFailures(total)
     })
   }
 

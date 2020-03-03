@@ -69,23 +69,23 @@ describe('Effect', () => {
     expect(result).toBe(4)
   })
   test('should be composable', async () => {
-    const effect1 = Effect.success(success, 4)
-    const effect2 = Effect.success(success, 5)
-    const effect3 = Effect.success(success, 6)
+    const effect1 = Effect.success('success1', 4)
+    const effect2 = Effect.success('success2', 5)
+    const effect3 = Effect.success('success3', 6)
     const effects = Effect.all(success, [effect1, effect2, effect3])
     const result = await effects.resolve()
-    expect(result).toEqual([4, 5, 6])
+    expect(result).toEqual({ success1: 4, success2: 5, success3: 6 })
   })
   test('should crash if one of composable crash', async () => {
     try {
-      const effect1 = Effect.success(success, 4)
-      const effect2 = Effect.fail(success, 5)
-      const effect3 = Effect.success(success, 6)
+      const effect1 = Effect.success('success1', 4)
+      const effect2 = Effect.fail('success2', 5)
+      const effect3 = Effect.success('success3', 6)
       const effects = Effect.all(failure, [effect1, effect2, effect3])
       await effects.resolve()
       expect(false).toBeTruthy()
     } catch (error) {
-      expect(error).toBe(5)
+      expect(error).toEqual({ success2: 5 })
     }
   })
 })
